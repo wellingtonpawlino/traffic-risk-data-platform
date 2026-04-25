@@ -36,6 +36,8 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
+
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -52,11 +54,27 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
     command: scheduler
+
+  jupyter:
+    image: jupyter/datascience-notebook:latest
+    container_name: traffic_jupyter
+    depends_on:
+      - minio
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+    command: start-notebook.py --NotebookApp.token='traffic' --NotebookApp.password=''
+
+
 
 volumes:
   postgres_data:
