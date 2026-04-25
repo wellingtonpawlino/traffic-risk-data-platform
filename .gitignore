@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# Airflow
+airflow/logs/
+
+# MinIO data
+minio/data/
+
+# Docker
+*.log
