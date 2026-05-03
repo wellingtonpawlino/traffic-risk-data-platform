@@ -13,6 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: always
 
   minio:
     image: minio/minio
@@ -26,10 +27,11 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    restart: always
 
-  airflow-webserver:
+  airflow-init:
     image: apache/airflow:2.9.0
-    container_name: traffic_airflow_webserver
+    container_name: traffic_airflow_init
     depends_on:
       - postgres
     environment:
@@ -37,7 +39,34 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        airflow db migrate &&
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+    restart: "no"
 
+  airflow-webserver:
+    image: apache/airflow:2.9.0
+    container_name: traffic_airflow_webserver
+    depends_on:
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -45,6 +74,7 @@ services:
     ports:
       - "8080:8080"
     command: webserver
+    restart: always
 
   airflow-scheduler:
     image: apache/airflow:2.9.0
@@ -60,6 +90,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
     command: scheduler
+    restart: always
 
   jupyter:
     image: jupyter/datascience-notebook:latest
@@ -72,9 +103,13 @@ services:
       - ./notebooks:/home/jovyan/work
     environment:
       JUPYTER_ENABLE_LAB: "yes"
-    command: start-notebook.py --NotebookApp.token='traffic' --NotebookApp.password=''
-
-
+    command:
+      - /bin/bash
+      - -c
+      - |
+        pip install --quiet boto3 pyarrow &&
+        start-notebook.py --NotebookApp.token=traffic --NotebookApp.password=''
+    restart: always
 
 volumes:
   postgres_data:

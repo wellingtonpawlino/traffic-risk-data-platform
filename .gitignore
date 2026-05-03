@@ -1,14 +1,58 @@
+############################
 # Python
+############################
+
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
 .venv/
 env/
+.env
+.env.*
 
+############################
+# Jupyter
+############################
+
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+############################
 # Airflow
+############################
+
 airflow/logs/
+airflow/__pycache__/
+airflow/.airflowignore
 
-# MinIO data
+############################
+# Dados (NÃO versionar)
+############################
+
+# MinIO (Bronze / Silver / Gold)
 minio/data/
+*.parquet
+*.csv
+*.zip
 
+############################
 # Docker
+############################
+
 *.log
+docker-volumes/
+
+############################
+# VS Code
+############################
+
+.vscode/
+
+############################
+# Sistema operacional
+############################
+
+.DS_Store
+Thumbs.db
