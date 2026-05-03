@@ -7,3 +7,6 @@ Stack:
 - Apache Airflow
 - MinIO (Data Lake Bronze/Silver/Gold)
 - PostgreSQL
+
+## versionamento branch
+-- infra validada e sem erro 
