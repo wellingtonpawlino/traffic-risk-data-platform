@@ -1,7 +1,9 @@
 version: "3.8"
 
 services:
-
+  # -----------------------------
+  # PostgreSQL
+  # -----------------------------
   postgres:
     image: postgres:15
     container_name: traffic_postgres
@@ -15,6 +17,9 @@ services:
       - "5432:5432"
     restart: always
 
+  # -----------------------------
+  # MinIO
+  # -----------------------------
   minio:
     image: minio/minio
     container_name: traffic_minio
@@ -29,6 +34,9 @@ services:
       - "9001:9001"
     restart: always
 
+  # -----------------------------
+  # Airflow INIT
+  # -----------------------------
   airflow-init:
     image: apache/airflow:2.9.0
     container_name: traffic_airflow_init
@@ -47,7 +55,7 @@ services:
       - /bin/bash
       - -c
       - |
-        airflow db migrate &&
+        airflow db migrate && \
         airflow users create \
           --username admin \
           --firstname Admin \
@@ -57,6 +65,9 @@ services:
           --password admin
     restart: "no"
 
+  # -----------------------------
+  # Airflow Webserver
+  # -----------------------------
   airflow-webserver:
     image: apache/airflow:2.9.0
     container_name: traffic_airflow_webserver
@@ -76,6 +87,9 @@ services:
     command: webserver
     restart: always
 
+  # -----------------------------
+  # Airflow Scheduler
+  # -----------------------------
   airflow-scheduler:
     image: apache/airflow:2.9.0
     container_name: traffic_airflow_scheduler
@@ -92,6 +106,9 @@ services:
     command: scheduler
     restart: always
 
+  # -----------------------------
+  # Jupyter
+  # -----------------------------
   jupyter:
     image: jupyter/datascience-notebook:latest
     container_name: traffic_jupyter
@@ -107,8 +124,54 @@ services:
       - /bin/bash
       - -c
       - |
-        pip install --quiet boto3 pyarrow &&
+        pip install --quiet boto3 pyarrow && \
         start-notebook.py --NotebookApp.token=traffic --NotebookApp.password=''
+    restart: always
+
+  # -----------------------------
+  # Superset INIT
+  # -----------------------------
+  superset-init:
+    build: ./superset
+    container_name: traffic_superset_init
+    depends_on:
+      - postgres
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        sleep 10
+        superset db upgrade
+        superset fab create-admin \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --email admin@local \
+          --password admin
+        superset init
+    volumes:
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
+
+  # -----------------------------
+  # Superset APP
+  # -----------------------------
+  superset:
+    build: ./superset
+    container_name: traffic_superset
+    depends_on:
+      - superset-init
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+    ports:
+      - "8088:8088"
+    command: >
+      /bin/bash -c "superset run -h 0.0.0.0 -p 8088"
+    volumes:
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py
     restart: always
 
 volumes:
