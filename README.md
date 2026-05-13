@@ -1,206 +1,238 @@
 # 🚦 Plataforma de Dados de Risco de Trânsito — INFOSIGA
 
-Arquitetura: **Bronze → Silver → Gold**  
-Status: ✅ Infra concluída | ✅ Camada de Serving implementada | 🚧 Data Understanding em andamento  
+Arquitetura: **Bronze → Silver → Prep → Serving (Postgres) → BI (Superset)**  
+Status: ✅ Pipeline End‑to‑End funcional  
 
 ---
 
 # 📌 Visão Geral
 
-Este projeto implementa uma **plataforma analítica de dados de risco de trânsito** utilizando Docker, Airflow, MinIO, Postgres, Superset e Jupyter, seguindo a arquitetura de dados em camadas (Bronze / Silver / Gold).
+Este projeto implementa uma **plataforma moderna de dados** para análise de risco de trânsito utilizando:
 
-O objetivo é construir uma base analítica confiável e reprodutível para análise de:
-- risco viário  
-- severidade de sinistros  
-- mortalidade no trânsito  
+- Apache Airflow  
+- MinIO (Data Lake)  
+- PostgreSQL (Serving Layer)  
+- Apache Superset (BI)  
 
-Utilizando os dados públicos do **INFOSIGA-SP (DETRAN-SP)**.
+O objetivo é construir um pipeline **reprodutível, escalável e analítico**, desde ingestão até visualização.
 
 ---
 
 # 🧠 Contexto de Negócio
 
-O projeto simula um cenário real do setor segurador:
+Simula um cenário do setor segurador:
 
-Uma seguradora automotiva deseja utilizar dados públicos para melhorar:
+Uma seguradora busca utilizar dados públicos para:
+
 - 📈 Precificação de risco  
-- 🛣️ Classificação de vias e regiões  
+- 🛣️ Classificação de regiões e vias  
 - ⚠️ Identificação de padrões de severidade  
-- 🤝 Parcerias com o poder público  
+- 💀 Análise de mortalidade no trânsito  
 
-👉 O foco é o **risco contextual do ambiente viário**, não o perfil individual.
-
----
-
-# 🏗️ Arquitetura
-## 🔸 Visão geral do fluxo
+👉 O foco é o **risco do ambiente viário (contextual)**
 
 ---
 
-# ⚙️ Infraestrutura
-
-Toda a stack roda via **Docker Compose**.
-
-## 🧩 Serviços
-
-- **Airflow** → Orquestração de pipelines  
-- **MinIO** → Data Lake (Bronze / Silver)  
-- **Postgres** → Serving Layer (Gold)  
-- **Superset** → Visualização / BI  
-- **Jupyter** → Data Understanding  
-- **pgAdmin** → Gestão do banco  
+# 🏗️ Arquitetura de Dados
 
 ---
 
-## ✅ Validações realizadas
+## 🟫 Bronze (Raw)
 
-- Conexão Jupyter ↔ MinIO ✅  
-- Buckets (`bronze`, `silver`, `gold`) ✅  
-- Leitura de Parquet ✅  
-- DAGs do Airflow executando ✅  
-- Escrita no Postgres ✅  
-- Superset conectado ao banco ✅  
-- Dataset criado e consultado ✅  
+- Dados ZIP originais do INFOSIGA  
+- Sem transformação  
+- Armazenados no MinIO  
+- Particionamento por data (`dt=YYYY-MM-DD`)
+
+---
+
+## 🟪 Silver (Tratamento)
+
+- Conversão para Parquet  
+- Padronização de tipos  
+- Manutenção da granularidade  
+
+### Datasets:
+
+- `sinistros`
+- `pessoas`
+- `veiculos`
+
+---
+
+## ⚙️ Prep Layer (Feature Engineering)
+
+Camada criada neste projeto para enriquecer os dados com lógica de negócio.
+
+### Enriquecimentos:
+
+- número de pessoas por sinistro  
+- número de veículos por sinistro  
+- número de vítimas fatais  
+- indicador de sinistro fatal  
+- classificação de turno  
+
+### 📊 tabela principal:
+
+
+prep.sinistros_enriched
+
+---
+
+## 🟨 Serving Layer (PostgreSQL)
+
+- Banco: `analytics`  
+- Schema: `prep`  
+- Tabela principal:
+
+👉 utilizada diretamente no BI
+
+---
+
+## 📊 BI — Superset
+
+- Conectado ao banco `analytics` ✅  
+- Dataset criado ✅  
+- Exploração via Explore ✅  
+
+Capacidades:
+
+- criação de gráficos  
+- dashboards  
+- SQL Lab  
+
+---
+
+# ⚙️ Pipeline de Dados
+
+## 🔄 DAG principal
+
+---
+
+## 🎯 Etapas do pipeline
+
+1. Leitura de dados da camada Silver (MinIO)  
+2. Integração entre:
+   - sinistros  
+   - pessoas  
+   - veículos  
+3. Aplicação de feature engineering  
+4. Escrita no Postgres  
+
+---
+
+## ✅ Execução Validada
+
+- DAG executada com sucesso ✅  
+- ~500k registros processados ✅  
+- Escrita no Postgres validada ✅  
+- Dados consumidos no Superset ✅  
+
+---
+
+# 🔧 Infraestrutura
+
+Executada via Docker Compose:
+
+- Airflow → orquestração  
+- MinIO → data lake  
+- PostgreSQL → armazenamento  
+- Superset → BI  
+- Jupyter → exploração  
+- pgAdmin → administração  
 
 ---
 
 # 🗄️ Governança de Dados
 
-Separação de responsabilidades no Postgres:
-
 | Database | Função |
 |--------|------|
 | `airflow` | Metadados do Airflow |
 | `superset` | Metadados do Superset |
-| `analytics` | Dados analíticos (Gold) |
-
-👉 Evita ambiente poluído e melhora governança.
+| `analytics` | Dados analíticos |
 
 ---
 
-# 📂 Camadas de Dados
+# 🧠 Debugging e Aprendizados
 
-## 🟫 Bronze
+Durante o desenvolvimento foram resolvidos problemas reais:
 
-- Dados ZIP originais do INFOSIGA  
-- Sem transformação  
-- Armazenados no MinIO  
-- Particionados por data (`dt=YYYY-MM-DD`)
+- ❌ erro de partição inexistente (`dt_ref`)  
+- ❌ erro de escrita no Postgres (`duplicate type`)  
+- ❌ erro de logs no Airflow  
+- ❌ travamentos no consumo de dados  
 
----
+✅ soluções aplicadas:
 
-## 🟪 Silver
-
-- Dados convertidos para **Parquet**
-- Tipos padronizados
-- Granularidade preservada
-- Sem agregações
-
-### Datasets:
-- `sinistros`
-- `pessoas`
-- `veiculos`
-
-### Modelo lógico:
-
-public.silver_sinistros_raw
+- fallback para última partição disponível  
+- limpeza segura de tabelas antes da escrita  
+- execução isolada fora do Airflow  
+- validação direta via container  
 
 ---
 
-## 🔄 DAGs implementadas
+# 🔄 Fluxo Git (Profissional)
 
-### 1. `infosiga_gold_simple_load`
-- Lê Parquet da Silver  
-- Carrega no Postgres  
-- Usado para validação do pipeline  
-
----
-
-### 2. `infosiga_gold_sinistros_tempo`
-- Base para agregações analíticas  
-- Evolução futura da camada Gold  
+- uso de feature branches ✅  
+- commit semântico ✅  
+- pull request ✅  
+- merge na main ✅  
+- limpeza de branches ✅  
 
 ---
 
-# 📊 BI — Superset
+# 📈 Exemplos de Análise
 
-## ✅ Configurado
-
-- Conexão com banco `analytics`
-- Dataset criado:
-
-
-silver_sinistros_raw
+- acidentes por turno  
+- fatalidades por turno  
+- média de veículos por sinistro  
 
 ---
 
-## Capabilidades
+# 🚀 Próximos Passos
 
-- Exploração de dados  
-- SQL Lab  
-- Criação de gráficos  
-- Base para dashboards  
+## Engenharia
 
----
-
-# 🚀 Status Atual
-
-| Etapa | Status |
-|------|------|
-| Infraestrutura | ✅ |
-| Ingestão (Bronze) | ✅ |
-| Processamento (Silver) | ✅ |
-| Serving (Gold) | ✅ |
-| BI (Superset) | ✅ |
-| Insights | 🚧 |
+- pipeline incremental  
+- otimização de performance  
+- particionamento no Postgres  
 
 ---
 
-# 📌 Próximos Passos
+## Modelagem
 
-## 🎯 Engenharia
-
-- Evoluir DAGs para processamento incremental  
-- Criar schema dedicado `gold.*`  
-- Aprimorar pipeline Silver → Gold  
-
----
-
-## 📊 Análise
-
-- Criar métricas de risco:
-  - taxa de mortalidade  
-  - severidade de acidentes  
-  - risco por município  
-- Agregações analíticas  
+- criação da camada Gold  
+- star schema:
+  - `fct_sinistros`
+  - `dim_tempo`
+  - `dim_municipio`
 
 ---
 
-## 📈 BI / Dashboards
+## BI
 
-- Dashboard de risco temporal  
-- Análise por turno  
-- Distribuição por tipo de sinistro  
-- Visualização geográfica  
+- dashboards analíticos completos  
+- análise temporal  
+- análise geográfica  
 
 ---
 
-## 💼 Portfólio
+## Portfólio
 
-- Adicionar storytelling de negócio  
-- Documentar insights reais  
-- Demonstrar pipeline end-to-end  
+- storytelling de negócio  
+- documentação de insights  
+- visual profissional  
 
 ---
 
 # 🎯 Resultado
 
-Esta plataforma representa uma:
+Este projeto demonstra:
 
-✅ Arquitetura moderna de dados  
-✅ Pipeline completo de ingestão → consumo  
-✅ Separação clara de camadas  
-✅ Integração com BI  
+✅ arquitetura moderna de dados  
+✅ pipeline end-to-end  
+✅ integração de múltiplas ferramentas  
+✅ resolução de problemas reais  
 
 ---
 
@@ -215,14 +247,6 @@ Esta plataforma representa uma:
 
 ---
 
-# 👨‍💻 Autor
+# 👨‍💻 Wellington Santos
 
 Projeto desenvolvido como prática avançada de Engenharia de Dados.
-
-
-🔥 Resultado
-Esse README agora está:
-✅ Profissional
-✅ Claro para recrutador
-✅ Estruturado como projeto de empresa
-✅ Mostrando arquitetura + negócio
