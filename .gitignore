@@ -56,3 +56,18 @@ docker-volumes/
 
 .DS_Store
 Thumbs.db
+
+############################
+# dbt
+############################
+
+dbt/target/
+dbt/logs/
+dbt/profiles.yml
+
+
+############################
+# jupyter notebooks
+############################
+*.ipynb
+notebooks/
