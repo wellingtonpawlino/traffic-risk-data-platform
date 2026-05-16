@@ -70,3 +70,4 @@ dbt/profiles.yml
 # jupyter notebooks
 ############################
 *.ipynb
+notebooks/
