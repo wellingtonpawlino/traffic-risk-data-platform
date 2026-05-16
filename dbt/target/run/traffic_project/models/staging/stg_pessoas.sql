@@ -1,5 +1,9 @@
 
-SELECT
+  create view "analytics"."staging"."stg_pessoas__dbt_tmp"
+    
+    
+  as (
+    SELECT
      id_sinistro::int                                            AS id_sinistro
     ,cod_ibge::int                                               AS id_cod_ibge
     ,INITCAP(TRIM(LOWER(municipio)))                             AS nm_municipio
@@ -78,3 +82,4 @@ SELECT
 
 FROM prep.pessoas
 WHERE id_sinistro IS NOT NULL
+  );

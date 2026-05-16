@@ -1,1 +1,1 @@
-{"_invocation_id": "5506cdf0-2d64-4f08-be5c-61a98e46a460", "linked": {"0": {"name": "model.traffic_project.stg_sinistros", "type": "model"}}}
+{"_invocation_id": "fc6c2fa0-463d-4de2-91c3-5c42b82f21e6", "linked": {"0": {"name": "model.traffic_project.stg_sinistros", "type": "model"}, "1": {"name": "model.traffic_project.stg_pessoas", "type": "model"}, "2": {"name": "model.traffic_project.stg_veiculos", "type": "model"}}}
