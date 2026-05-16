@@ -1,0 +1,17 @@
+name: traffic_project
+version: "1.0"
+profile: default
+
+config-version: 2
+
+model-paths: ["models"]
+
+models:
+  traffic_project:
+    +materialized: view
+
+    staging:
+      +schema: staging
+
+    marts:
+      +schema: marts

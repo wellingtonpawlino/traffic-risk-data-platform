@@ -187,6 +187,16 @@ services:
       - postgres
     restart: always
 
+  
+  dbt:
+    build: ./dbt
+    container_name: traffic_dbt
+    volumes:
+      - ./dbt:/app
+    depends_on:
+      - postgres
+
+
 
 volumes:
   postgres_data:

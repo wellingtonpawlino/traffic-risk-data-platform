@@ -1,0 +1,11 @@
+default:
+  outputs:
+    dev:
+      type: postgres
+      host: traffic_postgres
+      user: airflow
+      password: airflow
+      port: 5432
+      dbname: analytics
+      schema: analytics
+  target: dev
