@@ -1,7 +1,3 @@
-
-
-
--- ajuste mínimo para validação de PR
 select 
 	id_sinistro::int AS id_sinistro
 	,CASE
