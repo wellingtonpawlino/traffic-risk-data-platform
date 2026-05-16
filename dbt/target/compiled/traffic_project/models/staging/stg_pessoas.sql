@@ -1,4 +1,3 @@
-
 SELECT
      id_sinistro::int                                            AS id_sinistro
     ,cod_ibge::int                                               AS id_cod_ibge
