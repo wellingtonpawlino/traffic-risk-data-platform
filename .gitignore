@@ -56,3 +56,10 @@ docker-volumes/
 
 .DS_Store
 Thumbs.db
+
+############################
+# dbt
+############################
+
+dbt/target/
+dbt/logs/
