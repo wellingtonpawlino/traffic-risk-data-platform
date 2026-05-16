@@ -63,3 +63,10 @@ Thumbs.db
 
 dbt/target/
 dbt/logs/
+dbt/profiles.yml
+
+
+############################
+# jupyter notebooks
+############################
+*.ipynb
