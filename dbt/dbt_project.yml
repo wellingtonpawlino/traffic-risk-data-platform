@@ -6,12 +6,21 @@ config-version: 2
 
 model-paths: ["models"]
 
+
 models:
   traffic_project:
-    +materialized: view
 
     staging:
       +schema: staging
+      +materialized: view
 
     marts:
       +schema: marts
+      +materialized: view 
+
+      fct_sinistros:
+        +materialized: table 
+
+      fct_pessoas_sinistro:
+        +materialized: table 
+
