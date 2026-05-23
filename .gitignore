@@ -57,12 +57,20 @@ docker-volumes/
 .DS_Store
 Thumbs.db
 
+<<<<<<< HEAD
 ############################
 # dbt
+=======
+
+
+############################
+# DBT
+>>>>>>> 691d5e5 (remove dbt artifacts do versionamento)
 ############################
 
 dbt/target/
 dbt/logs/
+<<<<<<< HEAD
 dbt/profiles.yml
 
 
@@ -71,3 +79,5 @@ dbt/profiles.yml
 ############################
 *.ipynb
 notebooks/
+=======
+>>>>>>> 691d5e5 (remove dbt artifacts do versionamento)
