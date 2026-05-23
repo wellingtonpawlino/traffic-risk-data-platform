@@ -4,7 +4,7 @@ import tempfile
 
 import boto3
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -18,15 +18,15 @@ MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minio123")
 SILVER_BUCKET = "silver"
 
 # -----------------------------
-# Postgres (DW)
+# Postgres
 # -----------------------------
 POSTGRES_URI = "postgresql+psycopg2://airflow:airflow@postgres:5432/analytics"
 
 # -----------------------------
-# Config datasets
+# Datasets
 # -----------------------------
 SINISTROS_DATASETS = [
-    "sinistros_2021-2021",
+    "sinistros_2015-2021",
     "sinistros_2022-2026"
 ]
 
@@ -37,18 +37,60 @@ def _s3_client():
         endpoint_url=MINIO_ENDPOINT,
         aws_access_key_id=MINIO_ACCESS_KEY,
         aws_secret_access_key=MINIO_SECRET_KEY,
+        region_name="us-east-1",
     )
+
+
+def _list_all_parquets(s3, bucket: str, prefix: str) -> list[str]:
+    keys = []
+    token = None
+
+    while True:
+        kwargs = {"Bucket": bucket, "Prefix": prefix}
+        if token:
+            kwargs["ContinuationToken"] = token
+
+        resp = s3.list_objects_v2(**kwargs)
+
+        for obj in resp.get("Contents", []):
+            k = obj["Key"]
+            if k.endswith(".parquet"):
+                keys.append(k)
+
+        if resp.get("IsTruncated"):
+            token = resp.get("NextContinuationToken")
+        else:
+            break
+
+    return keys
+
+
+def _latest_parquet_key_for_dataset(s3, dataset: str) -> str:
+    prefix = f"infosiga/{dataset}/dt="
+    keys = _list_all_parquets(s3, SILVER_BUCKET, prefix)
+
+    if not keys:
+        raise ValueError(f"Nenhum parquet encontrado para {dataset}")
+
+    return sorted(keys)[-1]
 
 
 def load_sinistros_to_postgres(**context):
     s3 = _s3_client()
-    ds = context["ds"]
-
     tmp_dir = tempfile.mkdtemp()
     dfs = []
 
+    # opcional: permitir override manual
+    dt_ref = None
+    if context.get("dag_run") and context["dag_run"].conf:
+        dt_ref = context["dag_run"].conf.get("dt_ref")
+
     for dataset in SINISTROS_DATASETS:
-        key = f"infosiga/{dataset}/dt={ds}/{dataset}.parquet"
+        if dt_ref:
+            key = f"infosiga/{dataset}/dt={dt_ref}/{dataset}.parquet"
+        else:
+            key = _latest_parquet_key_for_dataset(s3, dataset)
+
         local_file = os.path.join(tmp_dir, f"{dataset}.parquet")
 
         print(f"📥 Baixando: {key}")
@@ -60,20 +102,46 @@ def load_sinistros_to_postgres(**context):
         dfs.append(df)
 
     df_final = pd.concat(dfs, ignore_index=True)
-
     print(f"🔥 Total final: {df_final.shape}")
 
     engine = create_engine(POSTGRES_URI)
 
-    df_final.to_sql(
-        "silver_sinistros_raw",
+    # -----------------------------
+    # ✅ CRIA SCHEMA SE NÃO EXISTIR
+    # -----------------------------
+    with engine.begin() as conn:
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS prep;"))
+
+    # -----------------------------
+    # ✅ GARANTE TABELA (SEM DROPAR)
+    # -----------------------------
+    df_final.head(0).to_sql(
+        name="sinistros",
         con=engine,
-        schema="staging",
-        if_exists="replace",
-        index=False,
+        schema="prep",
+        if_exists="append",
+        index=False
     )
 
-    print("✅ Dados de sinistros carregados no Postgres")
+    # -----------------------------
+    # ✅ LIMPA DADOS (SEM QUEBRAR DBT)
+    # -----------------------------
+    with engine.begin() as conn:
+        conn.execute(text("TRUNCATE TABLE prep.sinistros;"))
+
+    # -----------------------------
+    # ✅ INSERE DADOS
+    # -----------------------------
+    df_final.to_sql(
+        name="sinistros",
+        con=engine,
+        schema="prep",
+        if_exists="append",
+        index=False,
+        chunksize=50000
+    )
+
+    print("✅ Dados carregados em prep.sinistros")
 
 
 default_args = {"owner": "airflow"}
@@ -84,13 +152,12 @@ with DAG(
     start_date=datetime(2026, 1, 1),
     schedule=None,
     catchup=False,
-    tags=["load", "postgres", "sinistros"],
+    tags=["load", "postgres"],
 ) as dag:
 
     load_task = PythonOperator(
         task_id="load_sinistros",
         python_callable=load_sinistros_to_postgres,
-        provide_context=True,
     )
 
     load_task
