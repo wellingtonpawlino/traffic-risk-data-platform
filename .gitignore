@@ -17,7 +17,7 @@ env/
 ############################
 
 .ipynb_checkpoints/
-notebooks/.ipynb_checkpoints/
+*.ipynb
 
 ############################
 # Airflow
@@ -28,10 +28,9 @@ airflow/__pycache__/
 airflow/.airflowignore
 
 ############################
-# Dados (NÃO versionar)
+# Dados
 ############################
 
-# MinIO (Bronze / Silver / Gold)
 minio/data/
 *.parquet
 *.csv
@@ -57,27 +56,10 @@ docker-volumes/
 .DS_Store
 Thumbs.db
 
-<<<<<<< HEAD
-############################
-# dbt
-=======
-
-
 ############################
 # DBT
->>>>>>> 691d5e5 (remove dbt artifacts do versionamento)
 ############################
 
 dbt/target/
 dbt/logs/
-<<<<<<< HEAD
 dbt/profiles.yml
-
-
-############################
-# jupyter notebooks
-############################
-*.ipynb
-notebooks/
-=======
->>>>>>> 691d5e5 (remove dbt artifacts do versionamento)
