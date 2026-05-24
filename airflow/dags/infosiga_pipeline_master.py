@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
+from airflow.operators.bash import BashOperator
 
-# Fallback: algumas versões não têm EmptyOperator
 try:
     from airflow.operators.empty import EmptyOperator
 except Exception:
@@ -56,17 +56,6 @@ with DAG(
         failed_states=["failed"],
     )
 
-    # 3) Data preparation
-    trigger_prep = TriggerDagRunOperator(
-        task_id="trigger_infosiga_data_preparation",
-        trigger_dag_id="infosiga_data_preparation",
-        conf=conf_payload,
-        wait_for_completion=True,
-        poke_interval=30,
-        allowed_states=["success"],
-        failed_states=["failed"],
-    )
-
     # 4) Loads para Postgres (PARALELO)
     trigger_load_sinistros = TriggerDagRunOperator(
         task_id="trigger_infosiga_load_sinistros",
@@ -100,6 +89,10 @@ with DAG(
 
     done = EmptyOperator(task_id="done")
 
+    dbt_run = BashOperator(
+    task_id="dbt_run",
+    bash_command='docker exec traffic_dbt bash -c "cd /app && dbt run"')
+
+
     # Sequência + paralelização
-    start >> trigger_bronze >> trigger_silver
-    trigger_silver >> [trigger_load_sinistros, trigger_load_pessoas, trigger_load_veiculos] >> done
+    start >> trigger_bronze >> trigger_silver >> [trigger_load_sinistros, trigger_load_pessoas, trigger_load_veiculos] >> dbt_run >> done
