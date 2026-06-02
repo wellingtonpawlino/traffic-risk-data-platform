@@ -1,255 +1,77 @@
-
-<h1 align="center">🚦 Plataforma de Dados de Risco de Trânsito </h1>
+<h1 align="center">🚦 Traffic Risk Data Platform</h1>
 
 <p align="center">
-  <img src="./assets/capa.png" alt="Banner Git Tutorial" width="600"/>
+  <img src="./assets/capa.png" width="600"/>
 </p>
 
+<p align="center">
+End-to-end data platform for traffic risk analysis using Infosiga data
 </p>
 
 ---
 
+## 📌 Overview
 
-# 📌 Visão Geral
-
-Este projeto implementa uma **plataforma moderna de dados** para análise de risco de trânsito utilizando:
+This project implements a **modern data platform** for traffic risk analysis using:
 
 - Apache Airflow  
 - MinIO (Data Lake)  
 - PostgreSQL (Serving Layer)  
 - Apache Superset (BI)  
 
-O objetivo é construir um pipeline **reprodutível, escalável e analítico**, desde ingestão até visualização.
+The goal is to build a **scalable, reproducible and analytical pipeline**, from ingestion to visualization.
 
 ---
 
-# 🧠 Contexto de Negócio
+## 🧠 Business Context
 
-Simula um cenário do setor segurador:
+This project simulates a real scenario in the insurance domain:
 
-Uma seguradora busca utilizar dados públicos para:
+An insurance company aims to leverage public data to:
 
-- 📈 Precificação de risco  
-- 🛣️ Classificação de regiões e vias  
-- ⚠️ Identificação de padrões de severidade  
-- 💀 Análise de mortalidade no trânsito  
+- 📈 Risk pricing  
+- 🛣️ Road and region classification  
+- ⚠️ Severity pattern detection  
+- 💀 Traffic mortality analysis  
 
-👉 O foco é o **risco do ambiente viário (contextual)**
-
----
-
-# 🏗️ Arquitetura de Dados
+👉 Focus: **contextual risk based on traffic conditions**
 
 ---
 
-## 🟫 Bronze (Raw)
+## 🏗️ Data Architecture
 
-- Dados ZIP originais do INFOSIGA  
-- Sem transformação  
-- Armazenados no MinIO  
-- Particionamento por data (`dt=YYYY-MM-DD`)
+### 🟫 Bronze (Raw Layer)
+
+- Original INFOSIGA ZIP files  
+- No transformation  
+- Stored in MinIO  
+- Partitioned by date (`dt=YYYY-MM-DD`)  
 
 ---
 
-## 🟪 Silver (Tratamento)
+### 🟪 Silver (Clean Layer)
 
-- Conversão para Parquet  
-- Padronização de tipos  
-- Manutenção da granularidade  
+- Converted to Parquet  
+- Standardized data types  
+- Maintained data granularity  
 
-### Datasets:
-
+Datasets:
 - `sinistros`
 - `pessoas`
 - `veiculos`
 
 ---
 
-## ⚙️ Prep Layer (Feature Engineering)
+### ⚙️ Prep Layer (Feature Engineering)
 
-Camada criada neste projeto para enriquecer os dados com lógica de negócio.
+Business logic applied to enrich datasets.
 
-### Enriquecimentos:
+#### Enrichments:
 
-- número de pessoas por sinistro  
-- número de veículos por sinistro  
-- número de vítimas fatais  
-- indicador de sinistro fatal  
-- classificação de turno  
+- Number of people per accident  
+- Number of vehicles per accident  
+- Fatal victims count  
+- Fatal accident indicator  
+- Time-of-day classification  
 
-### 📊 tabela principal:
-
-
-prep.sinistros_enriched
-
----
-
-## 🟨 Serving Layer (PostgreSQL)
-
-- Banco: `analytics`  
-- Schema: `prep`  
-- Tabela principal:
-
-👉 utilizada diretamente no BI
-
----
-
-## 📊 BI — Superset
-
-- Conectado ao banco `analytics` ✅  
-- Dataset criado ✅  
-- Exploração via Explore ✅  
-
-Capacidades:
-
-- criação de gráficos  
-- dashboards  
-- SQL Lab  
-
----
-
-# ⚙️ Pipeline de Dados
-
-## 🔄 DAG principal
-
----
-
-## 🎯 Etapas do pipeline
-
-1. Leitura de dados da camada Silver (MinIO)  
-2. Integração entre:
-   - sinistros  
-   - pessoas  
-   - veículos  
-3. Aplicação de feature engineering  
-4. Escrita no Postgres  
-
----
-
-## ✅ Execução Validada
-
-- DAG executada com sucesso ✅  
-- ~500k registros processados ✅  
-- Escrita no Postgres validada ✅  
-- Dados consumidos no Superset ✅  
-
----
-
-# 🔧 Infraestrutura
-
-Executada via Docker Compose:
-
-- Airflow → orquestração  
-- MinIO → data lake  
-- PostgreSQL → armazenamento  
-- Superset → BI  
-- Jupyter → exploração  
-- pgAdmin → administração  
-
----
-
-# 🗄️ Governança de Dados
-
-| Database | Função |
-|--------|------|
-| `airflow` | Metadados do Airflow |
-| `superset` | Metadados do Superset |
-| `analytics` | Dados analíticos |
-
----
-
-# 🧠 Debugging e Aprendizados
-
-Durante o desenvolvimento foram resolvidos problemas reais:
-
-- ❌ erro de partição inexistente (`dt_ref`)  
-- ❌ erro de escrita no Postgres (`duplicate type`)  
-- ❌ erro de logs no Airflow  
-- ❌ travamentos no consumo de dados  
-
-✅ soluções aplicadas:
-
-- fallback para última partição disponível  
-- limpeza segura de tabelas antes da escrita  
-- execução isolada fora do Airflow  
-- validação direta via container  
-
----
-
-# 🔄 Fluxo Git (Profissional)
-
-- uso de feature branches ✅  
-- commit semântico ✅  
-- pull request ✅  
-- merge na main ✅  
-- limpeza de branches ✅  
-
----
-
-# 📈 Exemplos de Análise
-
-- acidentes por turno  
-- fatalidades por turno  
-- média de veículos por sinistro  
-
----
-
-# 🚀 Próximos Passos
-
-## Engenharia
-
-- pipeline incremental  
-- otimização de performance  
-- particionamento no Postgres  
-
----
-
-## Modelagem
-
-- criação da camada Gold  
-- star schema:
-  - `fct_sinistros`
-  - `dim_tempo`
-  - `dim_municipio`
-
----
-
-## BI
-
-- dashboards analíticos completos  
-- análise temporal  
-- análise geográfica  
-
----
-
-## Portfólio
-
-- storytelling de negócio  
-- documentação de insights  
-- visual profissional  
-
----
-
-# 🎯 Resultado
-
-Este projeto demonstra:
-
-✅ arquitetura moderna de dados  
-✅ pipeline end-to-end  
-✅ integração de múltiplas ferramentas  
-✅ resolução de problemas reais  
-
----
-
-# 🧠 Tecnologias
-
-- Python  
-- Apache Airflow  
-- MinIO  
-- PostgreSQL  
-- Apache Superset  
-- Docker  
-
----
-
-# 👨‍💻 Wellington Santos
+#### Main table:
