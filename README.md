@@ -1,9 +1,24 @@
-# 🚦 Plataforma de Dados de Risco de Trânsito — INFOSIGA
+
+<h1 align="center">🚦 Plataforma de Dados de Risco de Trânsito </h1>
+
+<p align="center">
+  <img src="./assets/capa.png" alt="Banner Git Tutorial" width="600"/>
+</p>
+
+
+
+
+</p>
+
+
+
+
 
 Arquitetura: **Bronze → Silver → Prep → Serving (Postgres) → BI (Superset)**  
 Status: ✅ Pipeline End‑to‑End funcional  
 
 ---
+
 
 # 📌 Visão Geral
 
@@ -250,3 +265,16 @@ Este projeto demonstra:
 # 👨‍💻 Wellington Santos
 
 Projeto desenvolvido como prática avançada de Engenharia de Dados.
+
+<h1 align="center">🚀 Projeto desenvolvido como prática avançada de Engenharia de Dados.</h1>
+
+<p align="center">
+  <img src="./assets/capa2.png" alt="Banner Git Tutorial" width="600"/>
+</p>
+
+
+
+
+</p>
+
+---
