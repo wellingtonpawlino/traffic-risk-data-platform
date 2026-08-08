@@ -1,5 +1,7 @@
-SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://airflow:airflow@postgres:5432/superset"
+import os
 
+DB_PASSWORD = os.environ.get("DB_PASSWORD")
+SQLALCHEMY_DATABASE_URI = f"postgresql+psycopg2://airflow:{DB_PASSWORD}@traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com:5432/superset"
 
 # 🟢 habilita templates / features
 FEATURE_FLAGS = {

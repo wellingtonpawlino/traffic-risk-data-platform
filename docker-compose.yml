@@ -40,13 +40,14 @@ services:
   airflow-init:
     image: apache/airflow:2.9.0
     container_name: traffic_airflow_init
-    depends_on:
-      - postgres
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
@@ -74,10 +75,15 @@ services:
     depends_on:
       - airflow-init
     environment:
+      AIRFLOW__WEBSERVER__WEB_SERVER_TIMEOUT: "300"
+      AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT: "300"
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
 
     user: 0:0
     volumes:
@@ -100,8 +106,11 @@ services:
       - airflow-webserver
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com:5432/airflow
       AIRFLOW__PIP_ADDITIONAL_REQUIREMENTS: "boto3 requests pandas pyarrow"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
     user: 0:0
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -140,11 +149,10 @@ services:
   superset-init:
     build: ./superset
     container_name: traffic_superset_init
-    depends_on:
-      - postgres
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+      DB_PASSWORD: ${DB_PASSWORD}
     entrypoint:
       - /bin/bash
       - -c
@@ -172,6 +180,7 @@ services:
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+      DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
     command: >
@@ -189,8 +198,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "5050:80"
-    depends_on:
-      - postgres
     restart: always
 
   
@@ -199,10 +206,6 @@ services:
     container_name: traffic_dbt
     volumes:
       - ./dbt:/app
-    depends_on:
-      - postgres
-
-
 
 volumes:
   postgres_data:
