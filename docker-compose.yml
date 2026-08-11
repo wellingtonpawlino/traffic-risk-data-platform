@@ -151,7 +151,7 @@ services:
     container_name: traffic_superset_init
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
-      SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
       DB_PASSWORD: ${DB_PASSWORD}
     entrypoint:
       - /bin/bash
@@ -179,7 +179,7 @@ services:
       - superset-init
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
-      SUPERSET_SECRET_KEY: "change-me-super-secret-key"
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
       DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
