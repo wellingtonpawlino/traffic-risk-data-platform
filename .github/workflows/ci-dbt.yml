@@ -1,0 +1,87 @@
+name: dbt run
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dbt/**"
+
+jobs:
+  dbt-run:
+    name: dbt run
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com
+      DB_PORT: 5432
+      DB_NAME: analytics
+      DB_USER: airflow
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get runner public IP
+        id: ip
+        run: echo "ip=$(curl -sf https://checkip.amazonaws.com)/32" >> $GITHUB_OUTPUT
+
+      - name: Allow runner IP in RDS security group
+        run: |
+          SG_ID=$(aws ec2 describe-security-groups \
+            --filters "Name=group-name,Values=traffic-risk-postgres-sg" \
+            --query "SecurityGroups[0].GroupId" --output text)
+          echo "SG_ID=$SG_ID" >> $GITHUB_ENV
+          aws ec2 authorize-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp --port 5432 \
+            --cidr "${{ steps.ip.outputs.ip }}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dbt-postgres
+        run: pip install dbt-postgres
+
+      - name: Create profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'PROFILES'
+          default:
+            outputs:
+              dev:
+                type: postgres
+                host: PLACEHOLDER_HOST
+                user: PLACEHOLDER_USER
+                password: "PLACEHOLDER_PASSWORD"
+                port: PLACEHOLDER_PORT
+                dbname: PLACEHOLDER_DBNAME
+                schema: analytics
+            target: dev
+          PROFILES
+          sed -i \
+            -e "s|PLACEHOLDER_HOST|$DB_HOST|" \
+            -e "s|PLACEHOLDER_USER|$DB_USER|" \
+            -e "s|PLACEHOLDER_PASSWORD|${{ secrets.DB_PASSWORD }}|" \
+            -e "s|PLACEHOLDER_PORT|$DB_PORT|" \
+            -e "s|PLACEHOLDER_DBNAME|$DB_NAME|" \
+            ~/.dbt/profiles.yml
+
+      - name: dbt run
+        working-directory: dbt
+        run: dbt run
+
+      - name: Revoke runner IP from security group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "$SG_ID" \
+            --protocol tcp --port 5432 \
+            --cidr "${{ steps.ip.outputs.ip }}"
