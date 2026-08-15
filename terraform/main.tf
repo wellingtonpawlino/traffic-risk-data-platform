@@ -7,11 +7,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "traffic-risk-tfstate"
-    key            = "traffic-risk-data-platform/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "traffic-risk-terraform-lock"
-    encrypt        = true
+    bucket       = "traffic-risk-tfstate"
+    key          = "traffic-risk-data-platform/terraform.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 
