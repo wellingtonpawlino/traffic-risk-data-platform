@@ -28,8 +28,10 @@ resource "aws_db_instance" "postgres" {
   username = "airflow"
   password = var.db_password
 
-  skip_final_snapshot    = true
-  publicly_accessible    = true
+  skip_final_snapshot     = true
+  publicly_accessible     = true
+  storage_encrypted       = true
+  backup_retention_period = 7
 
   vpc_security_group_ids = [aws_security_group.postgres_sg.id]
 }
