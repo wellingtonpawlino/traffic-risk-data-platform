@@ -3,8 +3,8 @@ resource "aws_security_group" "postgres_sg" {
   description = "Permite acesso ao RDS Postgres"
 
   ingress {
-    from_port   = 5432
-    to_port     = 5432
+    from_port   = 5433
+    to_port     = 5433
     protocol    = "tcp"
     cidr_blocks = [var.allowed_cidr]
   }
@@ -28,6 +28,7 @@ resource "aws_db_instance" "postgres" {
   username = "airflow"
   password = var.db_password
 
+  port                    = 5433
   skip_final_snapshot     = true
   publicly_accessible     = true
   storage_encrypted       = true
@@ -47,10 +48,10 @@ resource "null_resource" "create_databases" {
     interpreter = ["bash", "-c"]
     command     = <<-EOT
       docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
-        psql -h ${aws_db_instance.postgres.address} -U airflow -d airflow \
+        psql -h ${aws_db_instance.postgres.address} -p 5433 -U airflow -d airflow \
         -c "CREATE DATABASE analytics;" 2>/dev/null || true
       docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
-        psql -h ${aws_db_instance.postgres.address} -U airflow -d airflow \
+        psql -h ${aws_db_instance.postgres.address} -p 5433 -U airflow -d airflow \
         -c "CREATE DATABASE superset;" 2>/dev/null || true
     EOT
   }

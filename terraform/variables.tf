@@ -5,6 +5,6 @@ variable "db_password" {
 }
 
 variable "allowed_cidr" {
-  description = "CIDR autorizado a conectar na porta 5432 do RDS (ex: \"1.2.3.4/32\")"
+  description = "CIDR autorizado a conectar na porta 5433 do RDS (ex: \"1.2.3.4/32\")"
   type        = string
 }

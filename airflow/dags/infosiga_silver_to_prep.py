@@ -14,7 +14,7 @@ BUCKET = "traffic-risk-datalake-infosiga"
 SILVER_PREFIX = "silver/infosiga"
 RDS_HOST = os.environ["RDS_HOST"]
 RDS_USER = "airflow"
-RDS_PORT = 5432
+RDS_PORT = 5433
 CATEGORIES = ["pessoas", "sinistros", "veiculos"]
 
 
