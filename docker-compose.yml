@@ -208,6 +208,8 @@ services:
   dbt:
     build: ./dbt
     container_name: traffic_dbt
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./dbt:/app
 

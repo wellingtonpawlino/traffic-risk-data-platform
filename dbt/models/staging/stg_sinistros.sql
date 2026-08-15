@@ -24,22 +24,22 @@ SELECT
     	THEN 'Sem Informacoes'
     	ELSE INITCAP(TRIM(LOWER(tp_sinistro_primario))) 
 		END AS ds_tipo_sinistro_primario
-   ,NULLIF(qtd_pedestre, 0)::int AS nr_qtd_pedestre
-   ,NULLIF(qtd_bicicleta, 0)::int AS nr_qtd_bicicleta
-   ,NULLIF(qtd_motocicleta, 0)::int AS nr_qtd_motocicleta
-   ,NULLIF(qtd_automovel, 0)::int AS nr_qtd_automovel
-   ,NULLIF(qtd_onibus, 0)::int AS nr_qtd_onibus
-   ,NULLIF(qtd_caminhao, 0)::int AS nr_qtd_caminhao
-   ,NULLIF(qtd_veic_outros, 0)::int AS nr_qtd_veic_outros
-   ,NULLIF(qtd_veic_nao_disponivel, 0)::int AS nr_qtd_veic_nao_disponivel
-   ,NULLIF(qtd_gravidade_fatal, 0)::int AS nr_qtd_gravidade_fatal
-   ,NULLIF(qtd_gravidade_grave, 0)::int AS nr_qtd_gravidade_grave
-   ,NULLIF(qtd_gravidade_leve, 0)::int AS nr_qtd_gravidade_leve
-   ,NULLIF(qtd_gravidade_ileso, 0)::int AS nr_qtd_gravidade_ileso
-   ,NULLIF(qtd_gravidade_nao_disponivel, 0)::int AS nr_qtd_gravidade_nao_disponivel
-   ,CASE 
-    	WHEN tp_sinistro_atropelamento::text = 'S' THEN TRUE
-    	ELSE FALSE 
+   ,NULLIF(NULLIF(qtd_pedestre, '0'), '')::numeric::int AS nr_qtd_pedestre
+   ,NULLIF(NULLIF(qtd_bicicleta, '0'), '')::numeric::int AS nr_qtd_bicicleta
+   ,NULLIF(NULLIF(qtd_motocicleta, '0'), '')::numeric::int AS nr_qtd_motocicleta
+   ,NULLIF(NULLIF(qtd_automovel, '0'), '')::numeric::int AS nr_qtd_automovel
+   ,NULLIF(NULLIF(qtd_onibus, '0'), '')::numeric::int AS nr_qtd_onibus
+   ,NULLIF(NULLIF(qtd_caminhao, '0'), '')::numeric::int AS nr_qtd_caminhao
+   ,NULLIF(NULLIF(qtd_veic_outros, '0'), '')::numeric::int AS nr_qtd_veic_outros
+   ,NULLIF(NULLIF(qtd_veic_nao_disponivel, '0'), '')::numeric::int AS nr_qtd_veic_nao_disponivel
+   ,NULLIF(NULLIF(qtd_gravidade_fatal, '0'), '')::numeric::int AS nr_qtd_gravidade_fatal
+   ,NULLIF(NULLIF(qtd_gravidade_grave, '0'), '')::numeric::int AS nr_qtd_gravidade_grave
+   ,NULLIF(NULLIF(qtd_gravidade_leve, '0'), '')::numeric::int AS nr_qtd_gravidade_leve
+   ,NULLIF(NULLIF(qtd_gravidade_ileso, '0'), '')::numeric::int AS nr_qtd_gravidade_ileso
+   ,NULLIF(NULLIF(qtd_gravidade_nao_disponivel, '0'), '')::numeric::int AS nr_qtd_gravidade_nao_disponivel
+   ,CASE
+    	WHEN tp_sinistro_atrop_pedestre = 'S' OR tp_sinistro_atrop_vitima_fora_veic = 'S' THEN TRUE
+    	ELSE FALSE
 		END AS fl_sinistro_atropelamento
    ,CASE 
     	WHEN tp_sinistro_colisao_frontal::text = 'S' THEN TRUE
@@ -86,7 +86,7 @@ SELECT
     	ELSE FALSE
 		END AS fl_sinistro_nao_disponivel
 
-  ,is_fatal_sinistro
+  ,(NULLIF(NULLIF(qtd_gravidade_fatal, '0'), '') IS NOT NULL) AS is_fatal_sinistro
 
 FROM prep.sinistros 
 WHERE id_sinistro IS NOT NULL

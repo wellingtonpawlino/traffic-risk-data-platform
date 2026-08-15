@@ -74,7 +74,7 @@ SELECT
 		THEN 'Sem Informacoes' 
     	ELSE INITCAP(TRIM(LOWER(local_via)))END AS ds_local_via
 		
-    ,is_fatal_pessoa::boolean                                    AS fl_fatal_pessoa
+    ,(gravidade_lesao = 'FATAL')                                 AS fl_fatal_pessoa
 
 FROM prep.pessoas
 WHERE id_sinistro IS NOT NULL
