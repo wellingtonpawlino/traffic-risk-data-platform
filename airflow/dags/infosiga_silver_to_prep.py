@@ -12,7 +12,7 @@ from airflow.operators.python import PythonOperator
 
 BUCKET = "traffic-risk-datalake-infosiga"
 SILVER_PREFIX = "silver/infosiga"
-RDS_HOST = "traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com"
+RDS_HOST = os.environ["RDS_HOST"]
 RDS_USER = "airflow"
 RDS_PORT = 5432
 CATEGORIES = ["pessoas", "sinistros", "veiculos"]
