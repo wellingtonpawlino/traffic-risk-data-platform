@@ -90,6 +90,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/data:/opt/airflow/data
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8080:8080"
@@ -116,6 +117,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/data:/opt/airflow/data
       - /var/run/docker.sock:/var/run/docker.sock
 
     command: scheduler
