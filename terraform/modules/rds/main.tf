@@ -33,3 +33,23 @@ resource "aws_db_instance" "postgres" {
 
   vpc_security_group_ids = [aws_security_group.postgres_sg.id]
 }
+
+resource "null_resource" "create_databases" {
+  depends_on = [aws_db_instance.postgres]
+
+  triggers = {
+    rds_id = aws_db_instance.postgres.id
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
+        psql -h ${aws_db_instance.postgres.address} -U airflow -d airflow \
+        -c "CREATE DATABASE analytics;" 2>/dev/null || true
+      docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
+        psql -h ${aws_db_instance.postgres.address} -U airflow -d airflow \
+        -c "CREATE DATABASE superset;" 2>/dev/null || true
+    EOT
+  }
+}

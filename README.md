@@ -135,17 +135,10 @@ Cria o bucket S3 `traffic-risk-datalake-infosiga` e o RDS `traffic-risk-postgres
 
 ### 2. Criar os databases no RDS
 
-Esta etapa ainda não é gerenciada pelo Terraform. Conecte ao RDS via pgAdmin ou psql
-(usando as credenciais do `terraform.tfvars`) e execute:
-
-```sql
--- conectado ao database 'airflow' como usuário airflow
-CREATE DATABASE analytics;
-CREATE DATABASE superset;
-```
-
-O schema `prep` dentro de `analytics` é criado automaticamente pela DAG
-`infosiga_silver_to_prep` na primeira execução (task `init_prep_schema`).
+O `terraform apply` cria automaticamente os databases `analytics` e `superset` via
+`null_resource` + `local-exec` (requer Docker em execução). O schema `prep` dentro de
+`analytics` é criado automaticamente pela DAG `infosiga_silver_to_prep` na primeira
+execução (task `init_prep_schema`).
 
 ### 3. Configurar variáveis de ambiente
 
@@ -229,7 +222,7 @@ a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
 - [x] Backend remoto para o state do Terraform (S3 com lock nativo — `use_lockfile = true`)
 - [x] CI/CD com GitHub Actions: `terraform plan` em PR com comentário automático, `dbt parse` em push
 - [x] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
-- [ ] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
+- [x] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
 - [x] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
 
 ---
