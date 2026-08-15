@@ -19,42 +19,13 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_s3_bucket" "data_lake" {
-  bucket = "traffic-risk-datalake-infosiga"
+module "s3" {
+  source      = "./modules/s3"
+  bucket_name = "traffic-risk-datalake-infosiga"
 }
 
-resource "aws_security_group" "postgres_sg" {
-  name        = "traffic-risk-postgres-sg"
-  description = "Permite acesso ao RDS Postgres"
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["177.170.44.4/32"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_db_instance" "postgres" {
-  identifier        = "traffic-risk-postgres"
-  engine            = "postgres"
-  engine_version    = "15"
-  instance_class    = "db.t3.micro"
-  allocated_storage = 20
-
-  db_name  = "airflow"
-  username = "airflow"
-  password = var.db_password
-
-  skip_final_snapshot = true
-  publicly_accessible  = true
-
-  vpc_security_group_ids = [aws_security_group.postgres_sg.id]
+module "rds" {
+  source       = "./modules/rds"
+  db_password  = var.db_password
+  allowed_cidr = var.allowed_cidr
 }
