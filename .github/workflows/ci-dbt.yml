@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "dbt/**"
+      - ".github/workflows/ci-dbt.yml"
 
 jobs:
   dbt-parse:
