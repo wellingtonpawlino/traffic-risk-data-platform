@@ -2,10 +2,10 @@ default:
   outputs:
     dev:
       type: postgres
-      host: traffic-risk-postgres.cgf4cckuyhc9.us-east-1.rds.amazonaws.com
+      host: "{{ env_var('RDS_HOST') }}"
       user: airflow
       password: "{{ env_var('DB_PASSWORD') }}"
-      port: 5432
+      port: 5433
       dbname: analytics
       schema: analytics
   target: dev

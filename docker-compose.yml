@@ -7,6 +7,7 @@ services:
   airflow-init:
     image: apache/airflow:2.9.0
     container_name: traffic_airflow_init
+    dns: ["8.8.8.8"]
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@${RDS_HOST}:5433/airflow
@@ -15,6 +16,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      RDS_HOST: ${RDS_HOST}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -42,6 +44,7 @@ services:
     container_name: traffic_airflow_webserver
     depends_on:
       - airflow-init
+    dns: ["8.8.8.8"]
     environment:
       AIRFLOW__WEBSERVER__WEB_SERVER_TIMEOUT: "300"
       AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT: "300"
@@ -52,6 +55,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      RDS_HOST: ${RDS_HOST}
       DB_PASSWORD: ${DB_PASSWORD}
 
     user: 0:0
@@ -74,6 +78,7 @@ services:
     container_name: traffic_airflow_scheduler
     depends_on:
       - airflow-webserver
+    dns: ["8.8.8.8"]
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@${RDS_HOST}:5433/airflow
@@ -81,6 +86,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      RDS_HOST: ${RDS_HOST}
       DB_PASSWORD: ${DB_PASSWORD}
     user: 0:0
     volumes:
@@ -119,9 +125,11 @@ services:
   superset-init:
     build: ./superset
     container_name: traffic_superset_init
+    dns: ["8.8.8.8"]
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      RDS_HOST: ${RDS_HOST}
       DB_PASSWORD: ${DB_PASSWORD}
       SUPERSET_ADMIN_PASSWORD: ${SUPERSET_ADMIN_PASSWORD:-admin}
     entrypoint:
@@ -148,9 +156,11 @@ services:
     container_name: traffic_superset
     depends_on:
       - superset-init
+    dns: ["8.8.8.8"]
     environment:
       SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
       SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+      RDS_HOST: ${RDS_HOST}
       DB_PASSWORD: ${DB_PASSWORD}
     ports:
       - "8088:8088"
@@ -175,7 +185,9 @@ services:
   dbt:
     build: ./dbt
     container_name: traffic_dbt
+    dns: ["8.8.8.8"]
     environment:
+      RDS_HOST: ${RDS_HOST}
       DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./dbt:/app
