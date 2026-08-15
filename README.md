@@ -1,200 +1,243 @@
-<h1 align="center">🚦 Traffic Risk Data Platform</h1>
+# Traffic Risk Data Platform
 
-<p align="center">
-  <img src="./assets/capa.png" width="600"/>
-</p>
+Pipeline de dados de sinistros de trânsito (INFOSIGA / DETRAN-SP), migrado de um setup
+100% local (Docker Compose + MinIO) para um setup híbrido com armazenamento e banco na
+AWS, mantendo orquestração e transformação self-hosted via Docker Compose. Projeto de
+portfólio em engenharia de dados.
 
-<p align="center">
-End-to-end data platform for traffic risk analysis using INFOSIGA public data
-</p>
-
----
-
-## 📌 Overview
-
-Modern data platform for traffic risk analysis built on AWS, orchestrated with Apache Airflow, transformed with dbt, and visualized in Apache Superset.
-
-The pipeline ingests raw accident data from INFOSIGA (São Paulo State traffic authority), processes it through a medallion architecture, and delivers analytical models ready for dashboards and risk scoring.
+![capa](./assets/capa.png)
 
 ---
 
-## 🧠 Business Context
-
-Simulates a real insurance domain scenario where public traffic data is used to:
-
-- 📈 Risk pricing by region and road type
-- 🛣️ Road and municipality classification
-- ⚠️ Severity and accident type pattern detection
-- 💀 Traffic mortality analysis
-
----
-
-## 🏗️ Architecture
+## Arquitetura
 
 ```
-INFOSIGA Portal
-      │  (manual download)
-      ▼
-┌─────────────────────────────────────────┐
-│           AWS S3 – Data Lake            │
-│  bronze/infosiga/dt=YYYY-MM-DD/*.zip   │
-│  silver/infosiga/{table}/dt=*/*.parquet│
-└─────────────────────────────────────────┘
-      │
-      ▼  (psycopg2 COPY)
-┌─────────────────────────────────────────┐
-│        AWS RDS PostgreSQL               │
-│  database: analytics                    │
-│  ├── prep.*      (raw text tables)      │
-│  ├── staging.*   (typed views – dbt)    │
-│  └── marts.*     (facts & dims – dbt)   │
-└─────────────────────────────────────────┘
-      │
-      ▼
-┌─────────────────────────────────────────┐
-│         Apache Superset                 │
-│  11 datasets · charts · dashboards      │
-└─────────────────────────────────────────┘
+INFOSIGA (download manual — requer login gov.br / SSO)
+  └─> S3 bronze   bronze/infosiga/dt=YYYY-MM-DD/dados_infosiga.zip
+        └─> S3 silver   silver/infosiga/{tabela}_{periodo}/dt=YYYY-MM-DD/{tabela}.parquet
+              └─> RDS PostgreSQL · database analytics · schema prep   (COPY nativo)
+                    └─> dbt staging   analytics.staging.*   (views tipadas)
+                          └─> dbt marts   analytics.marts.*   (star schema)
+                                └─> Apache Superset   localhost:8088
 ```
+
+Airflow orquestra as três DAGs (bronze → silver → prep).  
+Todos os serviços de aplicação (Airflow, Superset, dbt, pgAdmin) rodam via Docker Compose
+apontando para S3 e RDS reais na AWS. A máquina local não armazena dados persistentes.
 
 ---
 
-## 🗂️ Data Layers
+## Stack
 
-### 🟫 Bronze — Raw
-- INFOSIGA ZIP files uploaded to S3
-- No transformation, partitioned by `dt=YYYY-MM-DD`
-- Path: `s3://traffic-risk-datalake-infosiga/bronze/infosiga/`
-
-### 🟪 Silver — Parquet
-- CSVs extracted from ZIP and converted to Parquet (Snappy)
-- Encoding normalised (ISO-8859-1 → UTF-8), separator `;`
-- 9 files across 3 domains × 3 time periods (2015-2021, 2022-2024, 2025-2026)
-- Path: `s3://traffic-risk-datalake-infosiga/silver/infosiga/{table}/dt=YYYY-MM-DD/`
-
-| Table | Rows |
+| Camada | Tecnologia |
 |---|---|
-| pessoas | 1,895,424 |
-| sinistros | 1,407,814 |
-| veiculos | 1,654,024 |
-
-### 🟦 Prep — Serving (RDS)
-- Silver Parquet loaded into PostgreSQL via `COPY` (bulk load)
-- All columns stored as `TEXT` — type casting done downstream in dbt
-- Schema: `prep` in database `analytics`
-
-### 🟩 Marts — Analytical (dbt)
-- **Staging** (`staging.*`): typed views with cleaned and cast columns
-- **Marts** (`marts.*`): dimensional model
-
-| Model | Type | Description |
-|---|---|---|
-| `fct_sinistros` | Table | 1.4M accident facts with metrics and flags |
-| `fct_pessoas_sinistro` | Table | 1.9M person-accident facts |
-| `dim_gravidade` | View | Injury severity dimension |
-| `dim_local` | View | Location dimension (lat/lon/road) |
-| `dim_local_pessoa` | View | Municipality and administrative region |
-| `dim_pessoa` | View | Victim profile dimension |
-| `dim_tipo_via` | View | Road type dimension |
-| `dim_tipo_vitima` | View | Victim type dimension |
-| `dim_tipo_sinistro` | View | Accident type dimension |
-| `dim_tempo` | View | Date dimension |
-| `dim_faixa_etaria` | View | Age group dimension |
+| Orquestração | Apache Airflow 2.9.0 (LocalExecutor) |
+| Transformação | dbt 1.10 + dbt-postgres |
+| Visualização | Apache Superset |
+| Containers | Docker Compose |
+| Infraestrutura como código | Terraform (AWS provider ~5.0) |
+| Data Lake | AWS S3 (`traffic-risk-datalake-infosiga`, us-east-1) |
+| Data Warehouse | AWS RDS PostgreSQL 15 (db.t3.micro, 20 GB) |
+| Ingestão / carga | Python · boto3 · pandas · pyarrow · psycopg2 |
 
 ---
 
-## ⚙️ Airflow DAGs
+## Decisões de arquitetura
 
-| DAG | Trigger | Description |
-|---|---|---|
-| `infosiga_bronze_ingestion` | Manual | Uploads `dados_infosiga.zip` from `airflow/data/` to S3 bronze |
-| `infosiga_silver_processing` | Manual | Extracts CSVs from bronze ZIP and converts to Parquet on S3 silver |
-| `infosiga_silver_to_prep` | Manual | Loads silver Parquet into RDS `prep.*` via psycopg2 COPY |
+**Por que self-hosted em vez de MWAA ou Fargate?**
+MWAA parte de ~USD 300/mês independente de uso; Fargate 24/7 para Airflow e Superset
+acrescentaria outro custo fixo expressivo. RDS `db.t3.micro` cabe no free tier. Para um
+projeto de portfólio que fica desligado entre demonstrações, a diferença é inviável.
+LocalExecutor é suficiente para o volume e a frequência de execução deste pipeline — não
+há paralelismo de workers que justifique CeleryExecutor aqui.
 
-> **Note:** INFOSIGA requires authenticated portal access. Download the ZIP manually and place it at `airflow/data/dados_infosiga.zip` before triggering `infosiga_bronze_ingestion`.
+**Por que sem NAT Gateway?**
+NAT Gateway cobra ~USD 35/mês de custo fixo, mais taxa por GB transferido. O RDS está em
+subnet pública com `publicly_accessible = true`, mas o security group restringe o ingress
+na porta 5432 a um único CIDR `/32` (o IP da máquina de desenvolvimento). Segurança
+adequada para o caso de uso, sem custo fixo surpresa.
+
+**Por que a ingestão do INFOSIGA é híbrida (manual + automatizado)?**
+O portal oficial exige autenticação via SSO gov.br. Automatizar o login foi avaliado e
+descartado: a sessão expira, o fluxo OAuth pode mudar sem aviso, e contornar isso cai em
+práticas frágeis que não pertencem a um pipeline de produção. A automação cobre tudo a
+partir do arquivo baixado — upload ao S3, extração de CSVs, conversão para Parquet e
+carga no RDS.
+
+**Por que COPY em vez de INSERT em lote na carga do silver para o RDS?**
+Contra um banco remoto em us-east-1, cada batch de INSERT acumula latência de round-trip.
+Com ~5 M de linhas, `psycopg2.cursor.copy_expert` (COPY nativo do PostgreSQL) envia os
+dados como um stream contínuo para o servidor — sem overhead por lote, sem transações
+intermediárias. Na prática: a mesma carga que levaria 30–60 minutos com `to_sql` e
+`method="multi"` concluiu em ~6 minutos por tabela.
+
+**Por que a infra sobe e desce sob demanda?**
+`terraform apply` antes de demonstrar, `terraform destroy` ao terminar. O custo real do
+projeto fora das sessões de uso é próximo de R$ 0/mês. Isso também força a infra a ser
+completamente reproduzível via código — não há estado manual que precise ser preservado.
 
 ---
 
-## 🛠️ Infrastructure
+## DAGs
 
-| Component | Technology | Details |
+| DAG | Trigger | O que faz |
 |---|---|---|
-| Data Lake | AWS S3 | `traffic-risk-datalake-infosiga` (us-east-1) |
-| Data Warehouse | AWS RDS PostgreSQL 15 | `analytics` database |
-| Orchestration | Apache Airflow 2.9.0 | LocalExecutor, metadata on RDS |
-| Transformation | dbt 1.10 + dbt-postgres | 14 models, custom schema macros |
-| Visualisation | Apache Superset | Connected to RDS marts schema |
-| Admin | pgAdmin 4 | Port 5050 |
+| `infosiga_bronze_ingestion` | Manual | Lê `dados_infosiga.zip` de `airflow/data/` e faz upload para `s3://traffic-risk-datalake-infosiga/bronze/infosiga/dt={ds}/` |
+| `infosiga_silver_processing` | Manual | Baixa o ZIP do bronze, extrai CSVs (ISO-8859-1, separador `;`), converte para Parquet (Snappy) e sobe para o S3 silver particionado por data |
+| `infosiga_silver_to_prep` | Manual | Baixa Parquets do silver e carrega via `COPY` nativo em `prep.pessoas`, `prep.sinistros`, `prep.veiculos` no RDS (3 tasks em paralelo) |
+
+> O INFOSIGA exige login via gov.br. Baixe `dados_infosiga.zip` manualmente no portal e
+> coloque em `airflow/data/` antes de disparar `infosiga_bronze_ingestion`.
 
 ---
 
-## 🚀 Local Setup
+## Modelos dbt
 
-### Prerequisites
+**Staging** (`analytics.staging.*`) — views que tipam e limpam colunas brutas do `prep`:  
+`stg_pessoas` · `stg_sinistros` · `stg_veiculos`
+
+**Marts** (`analytics.marts.*`) — star schema:
+
+| Modelo | Tipo | Linhas |
+|---|---|---|
+| `fct_sinistros` | Table | 1.407.814 |
+| `fct_pessoas_sinistro` | Table | 1.895.424 |
+| `dim_gravidade` | View | — |
+| `dim_local` | View | — |
+| `dim_local_pessoa` | View | — |
+| `dim_pessoa` | View | — |
+| `dim_tipo_via` | View | — |
+| `dim_tipo_vitima` | View | — |
+| `dim_tipo_sinistro` | View | — |
+| `dim_tempo` | View | — |
+| `dim_faixa_etaria` | View | — |
+
+---
+
+## Como rodar
+
+### Pré-requisitos
+
 - Docker + Docker Compose
-- AWS credentials with S3 and RDS access
-- `.env` file at project root
+- Terraform CLI
+- AWS CLI configurado com credenciais que têm acesso a S3 e RDS
 
-### `.env` file
+### 1. Provisionar a infraestrutura
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+Cria o bucket S3 `traffic-risk-datalake-infosiga` e o RDS `traffic-risk-postgres`
+(db.t3.micro, PostgreSQL 15). Anote o endpoint do RDS no output.
+
+### 2. Criar os databases no RDS
+
+Esta etapa ainda não é gerenciada pelo Terraform. Conecte ao RDS via pgAdmin ou psql
+(usando as credenciais do `terraform.tfvars`) e execute:
+
+```sql
+-- conectado ao database 'airflow' como usuário airflow
+CREATE DATABASE analytics;
+CREATE DATABASE superset;
+```
+
+O schema `prep` dentro de `analytics` é criado automaticamente pela DAG
+`infosiga_silver_to_prep` na primeira execução (task `init_prep_schema`).
+
+### 3. Configurar variáveis de ambiente
+
+```bash
+cp .env.example .env
+```
+
+Preencha o `.env`:
+
 ```env
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_DEFAULT_REGION=us-east-1
-DB_PASSWORD=...
-SUPERSET_SECRET_KEY=...
+DB_PASSWORD=...           # senha definida no terraform.tfvars
+SUPERSET_SECRET_KEY=...   # qualquer string longa e aleatória
 ```
 
-### Start services
+### 4. Subir os serviços
+
 ```bash
 docker compose up -d
 ```
 
-Services:
-- Airflow: http://localhost:8080 (`admin` / `admin`)
-- Superset: http://localhost:8088 (`admin` / `admin`)
-- pgAdmin: http://localhost:5050 (`admin@admin.com` / `admin`)
+| Serviço | URL | Credenciais padrão |
+|---|---|---|
+| Airflow | http://localhost:8080 | admin / admin |
+| Superset | http://localhost:8088 | admin / admin |
+| pgAdmin | http://localhost:5050 | admin@admin.com / admin |
 
-### Run the full pipeline
+> O `docker-compose.yml` ainda contém serviços legado da arquitetura anterior (MinIO e
+> o container postgres local) que não são mais utilizados pelo pipeline atual.
+
+### 5. Baixar os dados
+
+Acesse [infosiga.sp.gov.br](https://www.infosiga.sp.gov.br), faça login via gov.br,
+baixe o arquivo de dados e salve em `airflow/data/dados_infosiga.zip`.
+
+### 6. Executar o pipeline
+
+Dispare as DAGs no Airflow UI em ordem, com a data de referência dos dados:
+
+```
+infosiga_bronze_ingestion → infosiga_silver_processing → infosiga_silver_to_prep
+```
+
+### 7. Rodar as transformações dbt
+
 ```bash
-# 1. Place the INFOSIGA ZIP in airflow/data/
-cp ~/Downloads/dados_infosiga.zip airflow/data/
-
-# 2. Trigger DAGs in Airflow UI (in order):
-#    infosiga_bronze_ingestion → infosiga_silver_processing → infosiga_silver_to_prep
-
-# 3. Run dbt transformations
 docker compose run --rm dbt dbt run
 ```
 
----
+### 8. Acessar os dados no Superset
 
-## 📁 Project Structure
+Acesse http://localhost:8088. Os 11 datasets de `marts.*` já estão registrados no banco
+`Analytics RDS` e disponíveis para criar charts e dashboards.
 
+### 9. Encerrar e destruir a infraestrutura
+
+```bash
+docker compose down
+cd terraform && terraform destroy
 ```
-traffic-risk-data-platform/
-├── airflow/
-│   ├── dags/
-│   │   ├── infosiga_bronze_ingestion.py
-│   │   ├── infosiga_silver_processing.py
-│   │   └── infosiga_silver_to_prep.py
-│   └── data/               # drop dados_infosiga.zip here
-├── dbt/
-│   ├── models/
-│   │   ├── staging/        # stg_pessoas, stg_sinistros, stg_veiculos
-│   │   └── marts/          # fct_* and dim_* models
-│   ├── macros/
-│   │   └── generate_schema_name.sql
-│   └── profiles.yml        # gitignored – uses env_var('DB_PASSWORD')
-├── superset/
-│   └── superset_config.py
-├── terraform/              # S3 bucket + RDS provisioning
-└── docker-compose.yml
-```
+
+O `terraform destroy` remove o RDS e o bucket S3, encerrando qualquer custo recorrente.
 
 ---
 
-## 📊 Data Source
+## Volume processado
 
-**INFOSIGA SP** — Sistema de Informações Gerenciais de Acidentes de Trânsito do Estado de São Paulo  
-Portal: https://www.infosiga.sp.gov.br  
-Coverage: 2015–2026 · Scope: São Paulo State · Granularity: per person, accident, and vehicle
+~4,96 M de linhas distribuídas em três domínios, cobrindo o Estado de São Paulo de 2015
+a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
+
+| Tabela | Linhas |
+|---|---|
+| `prep.pessoas` | 1.895.424 |
+| `prep.sinistros` | 1.407.814 |
+| `prep.veiculos` | 1.654.024 |
+
+---
+
+## Roadmap
+
+- [ ] Backend remoto para o state do Terraform (S3 + DynamoDB lock)
+- [ ] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
+- [ ] CI/CD com GitHub Actions: `terraform plan` em PR, `dbt run` e testes em merge
+- [ ] Testes dbt (`dbt test`) com asserções de contagem mínima e unicidade de PKs
+- [ ] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
+
+---
+
+## Fonte dos dados
+
+**INFOSIGA SP** — Sistema de Informações Gerenciais de Acidentes de Trânsito do Estado
+de São Paulo  
+Portal: https://www.infosiga.sp.gov.br
