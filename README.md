@@ -192,6 +192,7 @@ infosiga_bronze_ingestion → infosiga_silver_processing → infosiga_silver_to_
 
 ```bash
 docker compose run --rm dbt dbt run
+docker compose run --rm dbt dbt test
 ```
 
 ### 8. Acessar os dados no Superset
@@ -227,7 +228,7 @@ a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
 
 - [x] Backend remoto para o state do Terraform (S3 com lock nativo — `use_lockfile = true`)
 - [x] CI/CD com GitHub Actions: `terraform plan` em PR com comentário automático, `dbt parse` em push
-- [ ] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
+- [x] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
 - [ ] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
 - [x] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
 

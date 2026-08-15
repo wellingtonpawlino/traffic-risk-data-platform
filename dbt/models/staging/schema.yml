@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_sinistros
+    columns:
+      - name: id_sinistro
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_pessoas
+    columns:
+      - name: id_sinistro
+        tests:
+          - not_null
+
+  - name: stg_veiculos
+    columns:
+      - name: id_veiculo
+        tests:
+          - unique
+          - not_null
+      - name: id_sinistro
+        tests:
+          - not_null

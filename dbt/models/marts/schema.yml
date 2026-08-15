@@ -1,0 +1,96 @@
+version: 2
+
+models:
+  - name: fct_sinistros
+    columns:
+      - name: id_sinistro
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_pessoas_sinistro
+    columns:
+      - name: id_sinistro
+        tests:
+          - not_null
+      - name: id_gravidade_lesao
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_gravidade')
+              field: id_gravidade_lesao
+      - name: id_tipo_vitima
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_tipo_vitima')
+              field: id_tipo_vitima
+      - name: id_local_pessoa
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_local_pessoa')
+              field: id_local_pessoa
+
+  - name: dim_gravidade
+    columns:
+      - name: id_gravidade_lesao
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_local
+    columns:
+      - name: id_local
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_local_pessoa
+    columns:
+      - name: id_local_pessoa
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_pessoa
+    columns:
+      - name: id_pessoa
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_tempo
+    columns:
+      - name: dt
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_tipo_sinistro
+    columns:
+      - name: id_tipo_sinistro
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_tipo_via
+    columns:
+      - name: id_tipo_via
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_tipo_vitima
+    columns:
+      - name: id_tipo_vitima
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_faixa_etaria
+    columns:
+      - name: id_faixa_etaria
+        tests:
+          - unique
+          - not_null
