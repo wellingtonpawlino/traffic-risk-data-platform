@@ -228,10 +228,10 @@ a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
 
 ## Roadmap
 
-- [ ] Backend remoto para o state do Terraform (S3 + DynamoDB lock)
+- [x] Backend remoto para o state do Terraform (S3 com lock nativo — `use_lockfile = true`)
+- [x] CI/CD com GitHub Actions: `terraform plan` em PR com comentário automático, `dbt parse` em push
+- [ ] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
 - [ ] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
-- [ ] CI/CD com GitHub Actions: `terraform plan` em PR, `dbt run` e testes em merge
-- [ ] Testes dbt (`dbt test`) com asserções de contagem mínima e unicidade de PKs
 - [ ] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
 
 ---
