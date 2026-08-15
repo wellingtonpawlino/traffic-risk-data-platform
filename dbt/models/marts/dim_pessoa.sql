@@ -11,7 +11,7 @@ with pessoas as (
 
 select 
 
-    row_number() over () as id_pessoa,
+    row_number() over (order by ds_sexo, ds_profissao, ds_grau_instrucao, ds_nacionalidade) as id_pessoa,
 
          ds_sexo
         ,ds_profissao

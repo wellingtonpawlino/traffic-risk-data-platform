@@ -11,7 +11,7 @@ with locais as (
 
 select 
 
-    row_number() over () as id_local  -- chave artificial
+    row_number() over (order by nm_logradouro, vl_latitude, vl_longitude) as id_local
 
    ,nm_logradouro
    ,vl_latitude

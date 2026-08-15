@@ -9,7 +9,7 @@ with locais as (
 
 select 
 
-    row_number() over () as id_local_pessoa,
+    row_number() over (order by id_cod_ibge) as id_local_pessoa,
 
     id_cod_ibge,
     nm_municipio

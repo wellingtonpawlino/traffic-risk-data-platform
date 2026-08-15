@@ -9,7 +9,7 @@ with vias as (
 
 select 
 
-    row_number() over () as id_tipo_via,
+    row_number() over (order by ds_tipo_via) as id_tipo_via,
 
     ds_tipo_via
 

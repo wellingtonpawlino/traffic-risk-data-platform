@@ -1,5 +1,5 @@
 select
-    row_number() over () as id_faixa_etaria,
+    row_number() over (order by ds_faixa_etaria) as id_faixa_etaria,
     ds_faixa_etaria
 from (
     values

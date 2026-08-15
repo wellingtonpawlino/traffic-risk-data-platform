@@ -9,7 +9,7 @@ with tipos as (
 
 select 
 
-    row_number() over () as id_tipo_sinistro
+    row_number() over (order by ds_tipo_sinistro_primario) as id_tipo_sinistro
 
    ,ds_tipo_sinistro_primario
 

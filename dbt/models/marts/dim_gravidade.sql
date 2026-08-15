@@ -9,7 +9,7 @@ with gravidades as (
 
 select 
 
-    row_number() over () as id_gravidade_lesao,
+    row_number() over (order by ds_gravidade_lesao) as id_gravidade_lesao,
 
     ds_gravidade_lesao
 
