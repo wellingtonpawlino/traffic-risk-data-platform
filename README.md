@@ -175,9 +175,6 @@ docker compose up -d
 | Superset | http://localhost:8088 | admin / admin |
 | pgAdmin | http://localhost:5050 | admin@admin.com / admin |
 
-> O `docker-compose.yml` ainda contém serviços legado da arquitetura anterior (MinIO e
-> o container postgres local) que não são mais utilizados pelo pipeline atual.
-
 ### 5. Baixar os dados
 
 Acesse [infosiga.sp.gov.br](https://www.infosiga.sp.gov.br), faça login via gov.br,
@@ -232,7 +229,7 @@ a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
 - [x] CI/CD com GitHub Actions: `terraform plan` em PR com comentário automático, `dbt parse` em push
 - [ ] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
 - [ ] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
-- [ ] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
+- [x] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
 
 ---
 
