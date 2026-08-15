@@ -1,3 +1,4 @@
+-- teste ci/cd
 SELECT
     id_sinistro,
     id_veiculo,
