@@ -217,13 +217,25 @@ a 2026 com granularidade por pessoa, sinistro e veículo envolvido:
 
 ---
 
-## Roadmap
+## CI/CD e Qualidade
 
-- [x] Backend remoto para o state do Terraform (S3 com lock nativo — `use_lockfile = true`)
-- [x] CI/CD com GitHub Actions: `terraform plan` em PR com comentário automático, `dbt parse` em push
-- [x] Testes dbt (`dbt test`) com asserções de unicidade e `not_null` nas PKs dos fatos
-- [x] Criação dos databases `analytics` e `superset` gerenciada pelo Terraform
-- [x] Remover serviços legado do `docker-compose.yml` (MinIO, postgres local)
+**GitHub Actions**
+
+| Workflow | Gatilho | O que faz |
+|---|---|---|
+| `ci-terraform.yml` | PR com mudança em `terraform/**` | `terraform fmt`, `validate` e `plan`; resultado postado como comentário no PR |
+| `ci-dbt.yml` | Push com mudança em `dbt/**` | `dbt parse` — valida modelos e schemas sem necessidade de banco ligado |
+
+**Testes dbt**
+
+`dbt test` cobre todas as camadas do star schema:
+- `unique` + `not_null` nas PKs de todas as dimensões e das facts `fct_sinistros` e `fct_pessoas_sinistro`
+- `relationships` das FKs de `fct_pessoas_sinistro` para `dim_gravidade`, `dim_tipo_vitima` e `dim_local_pessoa`
+
+**Infraestrutura**
+
+State do Terraform armazenado em S3 com lock nativo (`use_lockfile = true`) — sem custo de DynamoDB.  
+Databases `analytics` e `superset` criados automaticamente pelo `terraform apply` via `null_resource`.
 
 ---
 
