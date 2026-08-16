@@ -47,12 +47,12 @@ resource "null_resource" "create_databases" {
   provisioner "local-exec" {
     interpreter = ["bash", "-c"]
     command     = <<-EOT
-      docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
+      docker run --rm --dns 8.8.8.8 -e PGPASSWORD='${var.db_password}' postgres:15 \
         psql -h ${aws_db_instance.postgres.address} -p 5433 -U airflow -d airflow \
-        -c "CREATE DATABASE analytics;" 2>/dev/null || true
-      docker run --rm -e PGPASSWORD='${var.db_password}' postgres:15 \
+        -c "CREATE DATABASE analytics;" 2>&1
+      docker run --rm --dns 8.8.8.8 -e PGPASSWORD='${var.db_password}' postgres:15 \
         psql -h ${aws_db_instance.postgres.address} -p 5433 -U airflow -d airflow \
-        -c "CREATE DATABASE superset;" 2>/dev/null || true
+        -c "CREATE DATABASE superset;" 2>&1
     EOT
   }
 }
