@@ -2,15 +2,37 @@ version: "3.8"
 
 services:
   # -----------------------------
+  # Postgres local (metadata Airflow)
+  # -----------------------------
+  postgres-airflow:
+    image: postgres:15
+    container_name: traffic_postgres_airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # -----------------------------
   # Airflow INIT
   # -----------------------------
   airflow-init:
     build: ./airflow
     container_name: traffic_airflow_init
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
     dns: ["8.8.8.8"]
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@${RDS_HOST}:5433/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -55,7 +77,7 @@ services:
       AIRFLOW__WEBSERVER__WEB_SERVER_TIMEOUT: "300"
       AIRFLOW__WEBSERVER__WEB_SERVER_MASTER_TIMEOUT: "300"
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@${RDS_HOST}:5433/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -87,7 +109,7 @@ services:
     dns: ["8.8.8.8"]
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${DB_PASSWORD}@${RDS_HOST}:5433/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
@@ -182,4 +204,5 @@ services:
 
 volumes:
   pgadmin_data:
+  airflow_db_data:
 
