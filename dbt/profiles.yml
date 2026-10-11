@@ -2,9 +2,9 @@ default:
   outputs:
     dev:
       type: postgres
-      host: "{{ env_var('RDS_HOST') }}"
+      host: "{{ env_var('RDS_HOST', 'localhost') }}"
       user: airflow
-      password: "{{ env_var('DB_PASSWORD') }}"
+      password: "{{ env_var('DB_PASSWORD', 'airflow') }}"
       port: 5433
       dbname: analytics
       schema: analytics
